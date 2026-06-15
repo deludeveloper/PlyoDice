@@ -198,14 +198,16 @@ function template(focus, level, includeUpper) {
 function buildSession(slots, level, equipment) {
   const fastCap = FAST_CAPS[level];
   const budget = BUDGETS[level];
+  const minLevel = LEVELS[level];
   const fastOf = (p) => p.reduce((s, { cat, ex }) => s + (cat !== "upper" && ex.fast ? ex.sets * ex.reps : 0), 0);
   const loadOf = (p) => p.reduce((s, { cat, ex }) => s + (cat !== "upper" ? ex.sets * ex.reps : 0), 0);
-  // Pick the highest-load valid template combination from 80 attempts
+  // Pick the highest-load valid template combination from 80 attempts, only from target-level or higher exercises
   let best = null, underCap = null, fallback = null;
   for (let attempt = 0; attempt < 80; attempt++) {
     const picked = slots
       .map((cat) => {
-        const ex = pickLeveled(pool(cat, level, equipment), level);
+        const challenging = pool(cat, level, equipment).filter((ex) => ex.lvl >= minLevel);
+        const ex = pickLeveled(challenging, level);
         return ex ? { cat, ex } : null;
       })
       .filter(Boolean);
@@ -218,7 +220,29 @@ function buildSession(slots, level, equipment) {
     }
     if (!fallback || f < fastOf(fallback)) fallback = picked;
   }
-  const session = best || underCap || fallback;
+  let session = best || underCap || fallback;
+
+  // Fill toward 85% of budget by appending exercises from non-upper categories
+  const fillCats = ["multi", "bounding", "pogo", "inplace", "standing", "depth"];
+  const used = new Set(session.map(({ ex }) => ex.name));
+  for (let fill = 0; fill < 8 && loadOf(session) < budget * 0.85; fill++) {
+    const cats = [...fillCats].sort(() => Math.random() - 0.5);
+    let added = false;
+    for (const cat of cats) {
+      const challenging = pool(cat, level, equipment).filter((ex) => !used.has(ex.name) && ex.lvl >= minLevel);
+      if (!challenging.length) continue;
+      const ex = pickLeveled(challenging, level);
+      if (!ex) continue;
+      const candidate = [...session, { cat, ex }];
+      if (fastOf(candidate) <= fastCap && loadOf(candidate) <= budget) {
+        session = candidate;
+        used.add(ex.name);
+        added = true;
+        break;
+      }
+    }
+    if (!added) break;
+  }
 
   return session;
 }
