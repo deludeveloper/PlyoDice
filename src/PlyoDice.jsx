@@ -218,29 +218,7 @@ function buildSession(slots, level, equipment) {
     }
     if (!fallback || f < fastOf(fallback)) fallback = picked;
   }
-  let session = best || underCap || fallback;
-
-  // Fill toward 85% of budget by appending exercises from non-upper categories
-  const fillCats = ["multi", "bounding", "pogo", "inplace", "standing", "depth"];
-  const used = new Set(session.map(({ ex }) => ex.name));
-  for (let fill = 0; fill < 8 && loadOf(session) < budget * 0.85; fill++) {
-    const cats = [...fillCats].sort(() => Math.random() - 0.5);
-    let added = false;
-    for (const cat of cats) {
-      const opts = pool(cat, level, equipment).filter((ex) => !used.has(ex.name));
-      if (!opts.length) continue;
-      const ex = pickLeveled(opts, level);
-      if (!ex) continue;
-      const candidate = [...session, { cat, ex }];
-      if (fastOf(candidate) <= fastCap && loadOf(candidate) <= budget) {
-        session = candidate;
-        used.add(ex.name);
-        added = true;
-        break;
-      }
-    }
-    if (!added) break;
-  }
+  const session = best || underCap || fallback;
 
   return session;
 }
