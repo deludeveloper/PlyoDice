@@ -257,7 +257,8 @@ export default function PlyoDice() {
   const rerollSlot = (i) => {
     setSession((prev) => {
       const slot = prev[i];
-      const options = pool(slot.cat, level, equipment, slot.ex.name);
+      const minLevel = LEVELS[level];
+      const options = pool(slot.cat, level, equipment, slot.ex.name).filter((ex) => ex.lvl >= minLevel);
       if (!options.length) return prev;
       const cap = FAST_CAPS[level];
       const otherFast = prev.reduce(
