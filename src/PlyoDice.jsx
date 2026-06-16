@@ -8,7 +8,7 @@ const DIE_IMG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAYAAACuw
 /* ------------------------------------------------------------------ */
 
 const LEVELS = { beginner: 1, intermediate: 2, advanced: 3 };
-const BUDGETS = { beginner: 100, intermediate: 150, advanced: 190 };
+const BUDGETS = { beginner: 80, intermediate: 120, advanced: 160 };
 const FAST_CAPS = { beginner: 85, intermediate: 110, advanced: 140 };
 
 const CATEGORIES = {
@@ -220,29 +220,7 @@ function buildSession(slots, level, equipment) {
     }
     if (!fallback || f < fastOf(fallback)) fallback = picked;
   }
-  let session = best || underCap || fallback;
-
-  // Fill toward 85% of budget by appending exercises from non-upper categories
-  const fillCats = ["multi", "bounding", "pogo", "inplace", "standing", "depth"];
-  const used = new Set(session.map(({ ex }) => ex.name));
-  for (let fill = 0; fill < 8 && loadOf(session) < budget * 0.85; fill++) {
-    const cats = [...fillCats].sort(() => Math.random() - 0.5);
-    let added = false;
-    for (const cat of cats) {
-      const challenging = pool(cat, level, equipment).filter((ex) => !used.has(ex.name) && ex.lvl >= minLevel);
-      if (!challenging.length) continue;
-      const ex = pickLeveled(challenging, level);
-      if (!ex) continue;
-      const candidate = [...session, { cat, ex }];
-      if (fastOf(candidate) <= fastCap && loadOf(candidate) <= budget) {
-        session = candidate;
-        used.add(ex.name);
-        added = true;
-        break;
-      }
-    }
-    if (!added) break;
-  }
+  const session = best || underCap || fallback;
 
   return session;
 }
