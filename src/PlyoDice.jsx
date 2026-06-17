@@ -179,7 +179,7 @@ function pickLeveled(list, level) {
   return weighted[Math.floor(Math.random() * weighted.length)];
 }
 
-function template(focus, level, includeUpper) {
+function template(focus, level) {
   let slots;
   if (focus === "reactive") {
     slots = ["pogo", "multi", "bounding"];
@@ -191,7 +191,6 @@ function template(focus, level, includeUpper) {
   } else {
     slots = ["pogo", Math.random() < 0.5 ? "standing" : "inplace", Math.random() < 0.5 ? "multi" : "bounding"];
   }
-  if (includeUpper) slots.push("upper");
   return slots;
 }
 
@@ -240,7 +239,6 @@ export default function PlyoDice() {
   const [level, setLevel] = useState("beginner");
   const [equipment, setEquipment] = useState([]);
   const [focus, setFocus] = useState("mixed");
-  const [includeUpper, setIncludeUpper] = useState(false);
   const [session, setSession] = useState(null);
   const [rollKey, setRollKey] = useState(0);
   const [budgetOpen, setBudgetOpen] = useState(false);
@@ -249,7 +247,7 @@ export default function PlyoDice() {
     setEquipment((prev) => (prev.includes(q) ? prev.filter((x) => x !== q) : [...prev, q]));
 
   const roll = () => {
-    const slots = template(focus, level, includeUpper);
+    const slots = template(focus, level);
     setSession(buildSession(slots, level, equipment));
     setRollKey((k) => k + 1);
   };
@@ -277,14 +275,14 @@ export default function PlyoDice() {
   };
 
   const totals = useMemo(() => {
-    if (!session) return { contacts: 0, fast: 0, throws: 0 };
-    let contacts = 0, fast = 0, throws = 0;
+    if (!session) return { contacts: 0, fast: 0 };
+    let contacts = 0, fast = 0;
     for (const { cat, ex } of session) {
       const n = ex.sets * ex.reps;
-      if (cat === "upper") throws += n;
-      else { contacts += n; if (ex.fast) fast += n; }
+      contacts += n;
+      if (ex.fast) fast += n;
     }
-    return { contacts, fast, throws };
+    return { contacts, fast };
   }, [session]);
 
   const budget = BUDGETS[level];
@@ -375,11 +373,6 @@ export default function PlyoDice() {
               </div>
             </div>
 
-            <div className="pd-group">
-              <button onClick={() => setIncludeUpper((v) => !v)} className={`pd-chip wide ${includeUpper ? "on" : ""}`}>
-                {includeUpper ? "✓ " : ""}Add upper-body work
-              </button>
-            </div>
 
             <button className="pd-roll" onClick={roll}>
               <Die key={rollKey} />
@@ -412,7 +405,7 @@ export default function PlyoDice() {
                         <div className="pd-row-name">{ex.name}</div>
                         <p className="pd-row-cue">{ex.cue}</p>
                         <div className="pd-row-foot">
-                          <span className="pd-row-stats">{ex.repLabel}<b>·</b>{ex.rest} rest<b>·</b>{ex.sets * ex.reps} {cat === "upper" ? "throws" : "contacts"}</span>
+                          <span className="pd-row-stats">{ex.repLabel}<b>·</b>{ex.rest} rest<b>·</b>{ex.sets * ex.reps} contacts</span>
                           <a className="pd-demo" href={demo(ex.name)} target="_blank" rel="noopener noreferrer">Watch demo ↗</a>
                         </div>
                       </div>
@@ -425,7 +418,7 @@ export default function PlyoDice() {
                 <button className="pd-budget-head" onClick={() => setBudgetOpen((v) => !v)} aria-expanded={budgetOpen}>
                   <span className="pd-label">Contact budget <span className="pd-q">?</span></span>
                   <span className={`pd-budget-num ${over ? "over" : ""}`}>
-                    {totals.contacts} / {budget}{totals.throws > 0 ? ` + ${totals.throws} throws` : ""}
+                    {totals.contacts} / {budget}
                   </span>
                 </button>
                 <div className="pd-lane">
